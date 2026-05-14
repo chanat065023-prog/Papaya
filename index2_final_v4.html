@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อานนท์กิจ - ระบบบัญชี, สต็อก & สรุปรายงาน Excel</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0f0d;
+  --surface: #111816;
+  --card: #162019;
+  --card2: #0f1a12;
+  --green: #3ddc6e;
+  --green-dim: #1e6b38;
+  --green-glow: rgba(61,220,110,0.15);
+  --red: #ff5f5f;
+  --red-dim: #6b1e1e;
+  --red-glow: rgba(255,95,95,0.12);
+  --gold: #f5c842;
+  --blue: #42a5f5;
+  --blue-glow: rgba(66,165,245,0.15);
+  --text: #e8f5ec;
+  --muted: #6b8f74;
+  --border: #1f3324;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Sarabun', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(61,220,110,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 10% 80%, rgba(61,220,110,0.03) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+header {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(135deg, #0d2a14 0%, #0a1e10 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-icon { font-size: 36px; line-height: 1; }
+.header-text h1 { font-size: 22px; font-weight: 800; color: var(--green); letter-spacing: 0.5px; }
+.header-text p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+.container {
+  position: relative;
+  z-index: 1;
+  padding: 16px;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── APP TABS (MAIN NAVIGATION) ── */
+.app-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 4px;
+  border: 1px solid var(--border);
+}
+
+.app-tab-btn {
+  padding: 10px 4px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'Sarabun', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.app-tab-btn.active {
+  background: var(--card);
+  color: #fff;
+  border: 1px solid var(--border);
+}
+
+/* ── OVERVIEW BOXES ── */
+.stock-box {
+  background: linear-gradient(135deg, #112518 0%, #0c1a11 100%);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1.5px solid var(--green-dim);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(61,220,110,0.05);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.stock-box:hover { transform: scale(1.01); }
+.stock-info .label { font-size: 13px; color: var(--green); font-weight: 700; }
+.stock-info .value { font-family: 'IBM Plex Mono', monospace; font-size: 28px; font-weight: 700; color: #fff; margin-top: 4px; }
+.stock-info .value span { font-size: 14px; color: var(--muted); margin-left: 4px; font-family: 'Sarabun', sans-serif; }
+.stock-info .sub-tip { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.summary-box { background: var(--card); border-radius: 16px; padding: 14px; border: 1px solid var(--border); position: relative; overflow: hidden; }
+.summary-box .label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+.summary-box .value { font-family: 'IBM Plex Mono', monospace; font-size: 19px; font-weight: 600; margin-top: 6px; line-height: 1; }
+.summary-box.income .value { color: var(--green); }
+.summary-box.expense .value { color: var(--red); }
+.summary-box.profit .value { color: var(--gold); }
+.summary-box.debt .value { color: var(--blue); }
+.summary-box .sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+/* ── FORMS & CARDS ── */
+.card { background: var(--card); border-radius: 20px; border: 1px solid var(--border); overflow: hidden; }
+.card-header { padding: 16px 18px 12px; border-bottom: 1px solid var(--border); font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.card-body { padding: 16px 18px; }
+
+.type-tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
+.type-tab { padding: 10px; border-radius: 9px; border: none; background: transparent; color: var(--muted); font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; }
+.type-tab.active-income { background: linear-gradient(135deg, #1a4d28, #1f6133); color: var(--green); }
+.type-tab.active-expense { background: linear-gradient(135deg, #4d1a1a, #6b2020); color: var(--red); }
+
+.sub-label { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 8px; text-transform: uppercase; }
+.category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.cat-btn { padding: 10px 8px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--card2); color: var(--muted); font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; }
+.cat-btn.selected-income { border-color: var(--green); background: var(--green-glow); color: var(--green); }
+.cat-btn.selected-expense { border-color: var(--red); background: var(--red-glow); color: var(--red); }
+.cat-btn.selected-debt { border-color: var(--blue); background: var(--blue-glow); color: var(--blue); }
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field-group { margin-bottom: 14px; position: relative; }
+.field-label { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+.field-input { width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-family: 'Sarabun', sans-serif; font-size: 15px; outline: none; }
+.field-input:focus { border-color: var(--green); }
+.amount-wrap { position: relative; }
+.amount-wrap .field-input { padding-right: 45px; font-family: 'IBM Plex Mono', monospace; font-size: 17px; }
+.amount-wrap .currency { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; font-weight: 600; }
+
+/* ── SIZE BREAKDOWN ACCORDION ── */
+.size-toggle-btn {
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed var(--border);
+  color: var(--muted);
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-bottom: 12px;
+  text-align: center;
+  font-weight: 600;
+}
+.size-breakdown-box {
+  background: rgba(0,0,0,0.15);
+  border-radius: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.size-input-group {
+  display: flex;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+.size-name { font-weight: 700; color: var(--gold); font-size: 13px; width: 24px; }
+.size-input-group input {
+  background: transparent;
+  border: none;
+  color: #fff;
+  width: 100%;
+  text-align: right;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  outline: none;
+  padding: 4px;
+}
+.size-unit { color: var(--muted); font-size: 11px; margin-left: 4px; }
+
+/* SAVE BUTTONS */
+.btn-save { width: 100%; padding: 14px; border-radius: 12px; border: none; font-family: 'Sarabun', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; }
+.btn-save.income-mode { background: linear-gradient(135deg, #1e6b38, #27913f); color: #fff; box-shadow: 0 4px 20px rgba(61,220,110,0.25); }
+.btn-save.expense-mode { background: linear-gradient(135deg, #7a2020, #a02828); color: #fff; box-shadow: 0 4px 20px rgba(255,95,95,0.2); }
+.btn-save.debt-mode { background: linear-gradient(135deg, #1565c0, #1e88e5); color: #fff; box-shadow: 0 4px 20px rgba(66,165,245,0.25); }
+
+/* ── HISTORY & FILTER ITEMS ── */
+.filter-row { display: flex; gap: 8px; padding: 12px 18px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.filter-btn { padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.filter-btn.active { border-color: var(--green); background: var(--green-glow); color: var(--green); }
+
+.history-list { display: flex; flex-direction: column; }
+.history-item { display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.history-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+.history-icon.income { background: var(--green-glow); }
+.history-icon.expense { background: var(--red-glow); }
+.history-info { flex: 1; min-width: 0; }
+.history-cat { font-size: 14px; font-weight: 700; color: var(--text); }
+.history-note { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.history-stock-tag { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.history-stock-tag span { font-size: 11px; padding: 1px 6px; border-radius: 4px; font-weight: 600; }
+.history-stock-tag .main-w-in { background: rgba(61,220,110,0.1); color: var(--green); }
+.history-stock-tag .main-w-out { background: rgba(255,95,95,0.1); color: var(--red); }
+.history-stock-tag .sub-w { background: rgba(245,200,66,0.08); color: var(--gold); border: 1px solid rgba(245,200,66,0.15); }
+.history-right { text-align: right; flex-shrink: 0; }
+.history-amount { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; }
+.history-amount.income { color: var(--green); }
+.history-amount.expense { color: var(--red); }
+.history-actions { display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end; }
+.btn-edit, .btn-del, .btn-pay { padding: 3px 10px; border-radius: 6px; border: none; font-family: 'Sarabun', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-edit { background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--border); }
+.btn-del { background: rgba(255,95,95,0.1); color: var(--red); border: 1px solid rgba(255,95,95,0.2); }
+.btn-pay { background: linear-gradient(135deg, #1b5e20, #2e7d32); color: #fff; }
+
+/* DEBTOR CARD */
+.debtor-card { background: var(--card); border-radius: 14px; padding: 14px; border: 1px solid var(--border); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+.debtor-name { font-size: 15px; font-weight: 700; color: #fff; }
+.debtor-last-update { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.debtor-bal { font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 700; color: var(--blue); }
+
+/* ── REPORT PANEL STYLES ── */
+.report-selector-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.report-btn-choice { background: var(--card2); border: 1.5px solid var(--border); color: var(--muted); padding: 12px; text-align: center; border-radius: 12px; font-weight: bold; font-family: 'Sarabun'; cursor: pointer; font-size: 14px; }
+.report-btn-choice.active { border-color: var(--gold); color: var(--gold); background: rgba(245,200,66,0.05); }
+
+.report-summary-box { background: linear-gradient(135deg, #1c2721 0%, #121a15 100%); border-radius: 16px; border: 1px solid var(--border); padding: 16px; margin-bottom: 14px; }
+.report-summary-title { font-size: 15px; font-weight: bold; color: var(--gold); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.report-stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed rgba(255,255,255,0.05); font-size: 14px; }
+.report-stat-row:last-child { border: none; }
+.report-stat-val { font-family: 'IBM Plex Mono'; font-weight: 600; }
+
+.btn-excel { width: 100%; background: linear-gradient(135deg, #107c41, #1f9a55); color: #fff; padding: 14px; border-radius: 12px; border: none; font-family: 'Sarabun'; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(16,124,65,0.2); }
+.btn-excel:hover { filter: brightness(1.1); }
+
+/* ── MODALS ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 100; align-items: flex-end; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: #162019; border-radius: 24px 24px 0 0; border: 1px solid var(--border); border-bottom: none; width: 100%; max-width: 480px; padding: 24px 20px 32px; max-height: 90vh; overflow-y: auto; }
+.modal-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: var(--gold); }
+.modal-close { margin-left: auto; background: var(--border); border: none; color: var(--muted); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; }
+.modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.btn-cancel { padding: 13px; border-radius: 12px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-weight: 600; cursor: pointer; }
+.btn-confirm { padding: 13px; border-radius: 12px; border: none; background: linear-gradient(135deg, #1e6b38, #27913f); color: #fff; font-weight: 700; cursor: pointer; }
+
+.empty-state { padding: 40px 20px; text-align: center; color: var(--muted); }
+.empty-state .icon { font-size: 48px; opacity: 0.4; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">🥭</div>
+  <div class="header-text">
+    <h1>อานนท์กิจ</h1>
+    <p>ระบบสต็อกแยกเบอร์, ลูกหนี้ & สรุปรายงานประจำงวด</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- MAIN NAVIGATION TABS (3 TABS NOW) -->
+  <div class="app-tabs">
+    <button class="app-tab-btn active" id="app-tab-main" onclick="switchAppView('main')">📝 แผง & สต็อก</button>
+    <button class="app-tab-btn" id="app-tab-debtor" onclick="switchAppView('debtor')">👥 บัญชีลูกหนี้</button>
+    <button class="app-tab-btn" id="app-tab-report" onclick="switchAppView('report')">📊 สรุปรายงาน</button>
+  </div>
+
+  <!-- ════════ VIEW 1: MAIN SYSTEM ════════ -->
+  <div id="view-main">
+    <div class="stock-box" onclick="openStockDetailsModal()">
+      <div class="stock-info">
+        <div class="label">🌿 มะละกอคงเหลือรวมในแผง</div>
+        <div class="value" id="stockBalance">0<span>กก.</span></div>
+        <div class="sub-tip">🔎 กดตรงนี้เพื่อดูยอดแยกเบอร์ A B C D</div>
+      </div>
+      <div class="stock-icon">📦</div>
+    </div>
+
+    <div class="summary-grid" style="margin-top: 14px;">
+      <div class="summary-box income"><div class="label">💚 รายรับวันนี้</div><div class="value" id="todayIncome">0</div><div class="sub">บาท</div></div>
+      <div class="summary-box expense"><div class="label">❤️ รายจ่ายวันนี้</div><div class="value" id="todayExpense">0</div><div class="sub">บาท</div></div>
+      <div class="summary-box profit"><div class="label">⭐ กำไรวันนี้</div><div class="value" id="todayProfit">0</div><div class="sub">บาท</div></div>
+      <div class="summary-box debt"><div class="label">📌 ยอดค้างหนี้ทั้งหมด</div><div class="value" id="totalDebtorBalance">0</div><div class="sub">บาท</div></div>
+    </div>
+
+    <!-- ADD TRANSACTION -->
+    <div class="card" style="margin-top: 14px;">
+      <div class="card-header">✏️ เพิ่มรายการบัญชี</div>
+      <div class="card-body">
+        <div class="type-tabs">
+          <button class="type-tab active-income" id="tab-income" onclick="switchFormTab('income')">💚 รายรับ</button>
+          <button class="type-tab" id="tab-expense" onclick="switchFormTab('expense')">❤️ รายจ่าย</button>
+        </div>
+
+        <div id="form-income-cats">
+          <div class="sub-label">ประเภทเงินรับ (หักสต็อกสินค้าออก)</div>
+          <div class="category-grid">
+            <button class="cat-btn selected-income" data-cat="income_cash" onclick="selectFormCat(this,'income')">💵 เงินสด</button>
+            <button class="cat-btn" data-cat="income_transfer" onclick="selectFormCat(this,'income')">📲 โอนเงิน</button>
+            <button class="cat-btn" data-cat="income_debtor" onclick="selectFormCat(this,'income')" style="grid-column: span 2; border-color: var(--blue); color: var(--blue);">📌 ค้างจ่าย (บันทึกเป็นหนี้ก้อนใหม่)</button>
+          </div>
+        </div>
+
+        <div id="form-expense-cats" style="display:none;">
+          <div class="sub-label">หมวดหมู่รายจ่าย</div>
+          <div class="category-grid">
+            <button class="cat-btn" data-cat="ค่ามะละกอ" onclick="selectFormCat(this,'expense')">🌿 ค่ามะละกอ (เพิ่มสต็อก)</button>
+            <button class="cat-btn" data-cat="ค่ารถขนส่งมะละกอ" onclick="selectFormCat(this,'expense')">🚚 ค่ารถขนส่ง</button>
+            <button class="cat-btn" data-cat="ค่าแผง" onclick="selectFormCat(this,'expense')">🏪 ค่าแผง</button>
+            <button class="cat-btn" data-cat="ค่าแรง" onclick="selectFormCat(this,'expense')">👷 ค่าแรง</button>
+            <button class="cat-btn" data-cat="ค่าใช้จ่ายอื่นๆ" onclick="selectFormCat(this,'expense')" style="grid-column:span 2;">💼 ค่าใช้จ่ายอื่นๆ</button>
+          </div>
+        </div>
+
+        <div class="field-group" id="debtor-name-row" style="display: none;">
+          <div class="field-label" style="color: var(--blue); font-weight: bold;">👤 ชื่อลูกค้า/ลูกหนี้</div>
+          <input class="field-input" type="text" id="debtorName" placeholder="กรอกชื่อลูกค้าที่ค้างเงิน" style="border-color: var(--blue);">
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <div class="field-label">จำนวนเงิน</div>
+            <div class="amount-wrap"><input class="field-input" type="number" id="amount" placeholder="0" inputmode="decimal"><span class="currency">฿</span></div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">น้ำหนักรวมทั้งหมด</div>
+            <div class="amount-wrap"><input class="field-input" type="number" id="weight" placeholder="0" inputmode="decimal" oninput="autoDistributeWeight(this.value)"><span class="currency">กก.</span></div>
+          </div>
+        </div>
+
+        <!-- SIZE ACCORDION -->
+        <button class="size-toggle-btn" id="sizeToggleBtn" onclick="toggleSizeForm()">📊 ระบุน้ำหนักแยกเบอร์ (A, B, C, D) ▾</button>
+        <div class="size-breakdown-box" id="sizeFormFields" style="display: none;">
+          <div class="size-input-group"><span class="size-name">A</span><input type="number" id="w_A" placeholder="0" inputmode="decimal" oninput="calcTotalFromSizes()"><span class="size-unit">กก.</span></div>
+          <div class="size-input-group"><span class="size-name">B</span><input type="number" id="w_B" placeholder="0" inputmode="decimal" oninput="calcTotalFromSizes()"><span class="size-unit">กก.</span></div>
+          <div class="size-input-group"><span class="size-name">C</span><input type="number" id="w_C" placeholder="0" inputmode="decimal" oninput="calcTotalFromSizes()"><span class="size-unit">กก.</span></div>
+          <div class="size-input-group"><span class="size-name">D</span><input type="number" id="w_D" placeholder="0" inputmode="decimal" oninput="calcTotalFromSizes()"><span class="size-unit">กก.</span></div>
+        </div>
+
+        <div class="field-group"><div class="field-label">หมายเหตุ</div><input class="field-input" type="text" id="note" placeholder="ข้อความเพิ่มเติม..."></div>
+        <div class="field-group"><div class="field-label">วันที่</div><input class="field-input" type="date" id="date"></div>
+
+        <button class="btn-save income-mode" id="saveBtn" onclick="addTransaction()">+ บันทึกรายรับ</button>
+      </div>
+    </div>
+
+    <!-- DAILY HISTORY -->
+    <div class="card" style="margin-top: 14px;">
+      <div class="card-header">📋 ประวัติรายการแผงวันนี้</div>
+      <div class="filter-row">
+        <button class="filter-btn active" id="f-all" onclick="setFilter('all')">ทั้งหมด</button>
+        <button class="filter-btn" id="f-income" onclick="setFilter('income')">💚 รายรับ</button>
+        <button class="filter-btn" id="f-expense" onclick="setFilter('expense')">❤️ รายจ่าย</button>
+      </div>
+      <div class="history-list" id="historyList"></div>
+    </div>
+  </div>
+
+  <!-- ════════ VIEW 2: DEBTOR MANAGEMENT ════════ -->
+  <div id="view-debtor" style="display: none;">
+    <div class="card">
+      <div class="card-header">👥 ทะเบียนรายชื่อลูกหนี้ค้างจ่ายทั้งหมด</div>
+      <div class="card-body" style="padding: 12px;" id="debtorListView"></div>
+    </div>
+  </div>
+
+  <!-- ════════ VIEW 3: WEEKLY & MONTHLY REPORTS ════════ -->
+  <div id="view-report" style="display: none;">
+    <div class="card">
+      <div class="card-header">📊 ศูนย์สรุปรายงาน & ส่งออก Excel</div>
+      <div class="card-body">
+        
+        <!-- PERIOD SELECTOR -->
+        <div class="report-selector-grid">
+          <button class="report-btn-choice active" id="rep-week" onclick="switchReportPeriod('weekly')">📅 สรุปรายสัปดาห์<br><span style="font-size:11px; font-weight:normal;">(7 วันล่าสุด)</span></button>
+          <button class="report-btn-choice" id="rep-month" onclick="switchReportPeriod('monthly')">🗓️ สรุปรายเดือน<br><span style="font-size:11px; font-weight:normal;">(30 วันล่าสุด)</span></button>
+        </div>
+
+        <!-- REPORT SCREEN SUMMARY -->
+        <div class="report-summary-box">
+          <div class="report-summary-title" id="reportPeriodTitle">📊 สรุปผลประกอบการรายสัปดาห์</div>
+          
+          <div class="report-stat-row"><span>💚 รายรับรวมทั้งสิ้น:</span><span class="report-stat-val" id="repIncome" style="color:var(--green);">0 ฿</span></div>
+          <div class="report-stat-row"><span>❤️ รายจ่ายรวมทั้งสิ้น:</span><span class="report-stat-val" id="repExpense" style="color:var(--red);">0 ฿</span></div>
+          <div class="report-stat-row" style="border-bottom: 1px solid var(--border); padding-bottom:12px;"><span>⭐ กำไรสุทธิ:</span><span class="report-stat-val" id="repProfit" style="color:var(--gold); font-size:16px;">0 ฿</span></div>
+          
+          <div class="report-stat-row" style="margin-top:8px;"><span>📦 ขายมะละกอออกรวม:</span><span class="report-stat-val" id="repWeightOut" style="color:#fff;">0 กก.</span></div>
+          <div class="report-stat-row"><span>&nbsp;&nbsp; - เบอร์ A ออกไป:</span><span class="report-stat-val" id="repA_Out">0 กก.</span></div>
+          <div class="report-stat-row"><span>&nbsp;&nbsp; - เบอร์ B ออกไป:</span><span class="report-stat-val" id="repB_Out">0 กก.</span></div>
+          <div class="report-stat-row"><span>&nbsp;&nbsp; - เบอร์ C ออกไป:</span><span class="report-stat-val" id="repC_Out">0 กก.</span></div>
+          <div class="report-stat-row"><span>&nbsp;&nbsp; - เบอร์ D ออกไป:</span><span class="report-stat-val" id="repD_Out">0 กก.</span></div>
+          
+          <div class="report-stat-row" style="margin-top:8px; border-top:1px dashed var(--border); padding-top:8px;"><span>📌 เกิดหนี้ค้างใหม่สะสม:</span><span class="report-stat-val" id="repNewDebt" style="color:var(--blue);">0 ฿</span></div>
+        </div>
+
+        <!-- EXPORT EXCEL BUTTON -->
+        <button class="btn-excel" onclick="exportToExcel()">
+          <span>📊 กดส่งออกรายงานเป็นไฟล์ Excel (.xls)</span>
+        </button>
+        <p style="font-size: 11px; color: var(--muted); text-align: center; margin-top: 8px;">*ระบบจะดึงข้อมูลทุกรายการในช่วงเวลาดังกล่าวมาจัดตารางสำหรับ Excel ให้ทันทีครับ</p>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL 1: STOCK BALANCES -->
+<div class="modal-overlay" id="stockDetailsModal">
+  <div class="modal">
+    <div class="modal-title">📦 ยอดสต็อกมะละกอแยกตามเบอร์<button class="modal-close" onclick="closeStockDetailsModal()">✕</button></div>
+    <div style="display: flex; flex-direction: column; gap: 12px; margin: 16px 0;">
+      <div style="display: flex; justify-content: space-between; padding: 12px 16px; background: var(--card2); border: 1px solid var(--border); border-radius: 12px;"><span style="font-weight: bold; color: var(--gold);">👑 เบอร์ A :</span><span style="font-family:'IBM Plex Mono'; font-size:18px; font-weight:bold;" id="st_A">0 กก.</span></div>
+      <div style="display: flex; justify-content: space-between; padding: 12px 16px; background: var(--card2); border: 1px solid var(--border); border-radius: 12px;"><span style="font-weight: bold; color: var(--gold);">💎 เบอร์ B :</span><span style="font-family:'IBM Plex Mono'; font-size:18px; font-weight:bold;" id="st_B">0 กก.</span></div>
+      <div style="display: flex; justify-content: space-between; padding: 12px 16px; background: var(--card2); border: 1px solid var(--border); border-radius: 12px;"><span style="font-weight: bold; color: var(--gold);">🍊 เบอร์ C :</span><span style="font-family:'IBM Plex Mono'; font-size:18px; font-weight:bold;" id="st_C">0 กก.</span></div>
+      <div style="display: flex; justify-content: space-between; padding: 12px 16px; background: var(--card2); border: 1px solid var(--border); border-radius: 12px;"><span style="font-weight: bold; color: var(--gold);">🍃 เบอร์ D :</span><span style="font-family:'IBM Plex Mono'; font-size:18px; font-weight:bold;" id="st_D">0 กก.</span></div>
+    </div>
+    <button class="btn-cancel" onclick="closeStockDetailsModal()" style="width: 100%;">ปิดหน้าต่าง</button>
+  </div>
+</div>
+
+<!-- MODAL 2: CLEAR DEBT -->
+<div class="modal-overlay" id="payDebtModal">
+  <div class="modal">
+    <div class="modal-title">💰 รับชำระเงินเคลียร์หนี้<button class="modal-close" onclick="closePayDebtModal()">✕</button></div>
+    <div class="field-group"><div class="field-label">ชื่อลูกหนี้</div><input class="field-input" type="text" id="pDebtName" readonly style="background: rgba(0,0,0,0.2); color: var(--muted);"></div>
+    <div class="field-group"><div class="field-label">ยอดหนี้คงค้างปัจจุบัน</div><div class="amount-wrap"><input class="field-input" type="text" id="pDebtCurrentBal" readonly style="background: rgba(0,0,0,0.2); font-family:'IBM Plex Mono'; color: var(--blue);"><span class="currency">฿</span></div></div>
+    <div class="field-group"><div class="field-label" style="color: var(--green); font-weight: bold;">จำนวนเงินที่นำมาจ่าย</div><div class="amount-wrap"><input class="field-input" type="number" id="pDebtAmountPay" placeholder="0.00" inputmode="decimal" style="border-color: var(--green);"><span class="currency">฿</span></div></div>
+    <div class="field-group"><div class="field-label">ช่องทางการรับชำระ</div><select class="field-input" id="pDebtChannel"><option value="income_cash">💵 เงินสด</option><option value="income_transfer">📲 เงินโอนเข้าบัญชี</option></select></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closePayDebtModal()">ยกเลิก</button><button class="btn-confirm" onclick="processPayDebt()">✅ ยืนยันชำระเงิน</button></div>
+  </div>
+</div>
+
+<!-- MODAL 3: EDIT TRANSACTION -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title">✏️ แก้ไขรายการบัญชี<button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="type-tabs">
+      <button class="type-tab" id="edit-tab-income" onclick="switchEditTab('income')">💚 รายรับ</button>
+      <button class="type-tab" id="edit-tab-expense" onclick="switchEditTab('expense')">❤️ รายจ่าย</button>
+    </div>
+    <div id="edit-income-cats">
+      <div class="sub-label">ประเภทเงินรับ</div>
+      <div class="category-grid">
+        <button class="cat-btn" data-cat="income_cash" onclick="selectEditCat(this,'income')">💵 เงินสด</button>
+        <button class="cat-btn" data-cat="income_transfer" onclick="selectEditCat(this,'income')">📲 โอนเงิน</button>
+        <button class="cat-btn" data-cat="income_debtor" onclick="selectEditCat(this,'income')" style="grid-column: span 2;">📌 ค้างจ่าย</button>
+      </div>
+    </div>
+    <div id="edit-expense-cats" style="display:none;">
+      <div class="sub-label">หมวดหมู่รายจ่าย</div>
+      <div class="category-grid">
+        <button class="cat-btn" data-cat="ค่ามะละกอ" onclick="selectEditCat(this,'expense')">🌿 ค่ามะละกอ</button>
+        <button class="cat-btn" data-cat="ค่ารถขนส่งมะละกอ" onclick="selectEditCat(this,'expense')">🚚 ค่ารถขนส่ง</button>
+        <button class="cat-btn" data-cat="ค่าแผง" onclick="selectEditCat(this,'expense')">🏪 ค่าแผง</button>
+        <button class="cat-btn" data-cat="ค่าแรง" onclick="selectEditCat(this,'expense')">👷 ค่าแรง</button>
+        <button class="cat-btn" data-cat="ค่าใช้จ่ายอื่นๆ" onclick="selectEditCat(this,'expense')" style="grid-column:span 2;">💼 ค่าใช้จ่ายอื่นๆ</button>
+      </div>
+    </div>
+    <div class="field-group" id="edit-debtor-name-row" style="display: none;"><div class="field-label">👤 ชื่อลูกค้า/ลูกหนี้</div><input class="field-input" type="text" id="editDebtorName"></div>
+    <div class="field-row">
+      <div class="field-group"><div class="field-label">จำนวนเงิน</div><div class="amount-wrap"><input class="field-input" type="number" id="editAmount" inputmode="decimal"><span class="currency">฿</span></div></div>
+      <div class="field-group"><div class="field-label">น้ำหนักรวม</div><div class="amount-wrap"><input class="field-input" type="number" id="editWeight" inputmode="decimal"><span class="currency">กก.</span></div></div>
+    </div>
+    <div class="sub-label">📦 แก้ไขน้ำหนักแยกเบอร์</div>
+    <div class="size-breakdown-box">
+      <div class="size-input-group"><span class="size-name">A</span><input type="number" id="ed_w_A"><span class="size-unit">กก.</span></div>
+      <div class="size-input-group"><span class="size-name">B</span><input type="number" id="ed_w_B"><span class="size-unit">กก.</span></div>
+      <div class="size-input-group"><span class="size-name">C</span><input type="number" id="ed_w_C"><span class="size-unit">กก.</span></div>
+      <div class="size-input-group"><span class="size-name">D</span><input type="number" id="ed_w_D"><span class="size-unit">กก.</span></div>
+    </div>
+    <div class="field-group"><div class="field-label">หมายเหตุ</div><input class="field-input" type="text" id="editNote"></div>
+    <div class="field-group"><div class="field-label">วันที่</div><input class="field-input" type="date" id="editDate"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">ยกเลิก</button><button class="btn-confirm" onclick="saveEdit()">💾 บันทึกการแก้ไข</button></div>
+  </div>
+</div>
+
+<script>
+let transactions = JSON.parse(localStorage.getItem("papayaData")) || [];
+
+let currentFormTab = 'income';
+let selectedFormCat = 'income_cash';
+let filterMode = 'all';
+let currentReportPeriod = 'weekly';
+let editIndex = -1;
+let editTab = 'income';
+let editSelectedCat = 'income_cash';
+let isSizeFieldsVisible = false;
+
+document.getElementById("date").valueAsDate = new Date();
+
+function switchAppView(view) {
+  ['main', 'debtor', 'report'].forEach(v => {
+    document.getElementById('app-tab-' + v).classList.remove('active');
+    document.getElementById('view-' + v).style.display = 'none';
+  });
+  document.getElementById('app-tab-' + view).classList.add('active');
+  document.getElementById('view-' + view).style.display = 'block';
+
+  if (view === 'debtor') renderDebtorList();
+  if (view === 'report') calculateAndRenderReport();
+}
+
+function switchFormTab(tab) {
+  currentFormTab = tab;
+  if (tab === 'income') {
+    document.getElementById('tab-income').className = 'type-tab active-income';
+    document.getElementById('tab-expense').className = 'type-tab';
+    document.getElementById('form-income-cats').style.display = 'block';
+    document.getElementById('form-expense-cats').style.display = 'none';
+    document.getElementById('saveBtn').className = 'btn-save income-mode';
+    document.getElementById('saveBtn').textContent = '+ บันทึกรายรับ';
+    selectedFormCat = 'income_cash';
+    resetFormCatSelections('#form-income-cats', 'income_cash', 'selected-income');
+  } else {
+    document.getElementById('tab-expense').className = 'type-tab active-expense';
+    document.getElementById('tab-income').className = 'type-tab';
+    document.getElementById('form-expense-cats').style.display = 'block';
+    document.getElementById('form-income-cats').style.display = 'none';
+    document.getElementById('saveBtn').className = 'btn-save expense-mode';
+    document.getElementById('saveBtn').textContent = '+ บันทึกรายจ่าย';
+    selectedFormCat = null;
+    resetFormCatSelections('#form-expense-cats', null, '');
+  }
+  document.getElementById('debtor-name-row').style.display = 'none';
+}
+
+function resetFormCatSelections(areaId, defaultCat, activeClass) {
+  document.querySelectorAll(areaId + ' .cat-btn').forEach(b => b.className = 'cat-btn');
+  if (defaultCat) {
+    const btn = document.querySelector(`${areaId} .cat-btn[data-cat="${defaultCat}"]`);
+    if(btn) btn.classList.add(activeClass);
+  }
+}
+
+function selectFormCat(btn, side) {
+  const area = side === 'income' ? '#form-income-cats' : '#form-expense-cats';
+  document.querySelectorAll(area + ' .cat-btn').forEach(b => b.className = 'cat-btn');
+  
+  let cls = side === 'income' ? 'selected-income' : 'selected-expense';
+  if (btn.dataset.cat === 'income_debtor') cls = 'selected-debt';
+  
+  btn.classList.add(cls);
+  selectedFormCat = btn.dataset.cat;
+  
+  if (selectedFormCat === 'income_debtor') {
+    document.getElementById('debtor-name-row').style.display = 'block';
+    document.getElementById('saveBtn').className = 'btn-save debt-mode';
+    document.getElementById('saveBtn').textContent = '📌 บันทึกรายการค้างชำระ';
+  } else {
+    document.getElementById('debtor-name-row').style.display = 'none';
+    if (side === 'income') {
+      document.getElementById('saveBtn').className = 'btn-save income-mode';
+      document.getElementById('saveBtn').textContent = '+ บันทึกรายรับ';
+    }
+  }
+}
+
+function toggleSizeForm() {
+  isSizeFieldsVisible = !isSizeFieldsVisible;
+  const fields = document.getElementById("sizeFormFields");
+  const btn = document.getElementById("sizeToggleBtn");
+  fields.style.display = isSizeFieldsVisible ? 'grid' : 'none';
+  btn.textContent = isSizeFieldsVisible ? '📊 ระบุน้ำหนักแยกเบอร์ (A, B, C, D) ▴' : '📊 ระบุน้ำหนักแยกเบอร์ (A, B, C, D) ▾';
+}
+
+function calcTotalFromSizes() {
+  const a = parseFloat(document.getElementById("w_A").value) || 0;
+  const b = parseFloat(document.getElementById("w_B").value) || 0;
+  const c = parseFloat(document.getElementById("w_C").value) || 0;
+  const d = parseFloat(document.getElementById("w_D").value) || 0;
+  if((a+b+c+d) > 0) document.getElementById("weight").value = a + b + c + d;
+}
+
+function autoDistributeWeight(val) {
+  const total = parseFloat(val) || 0;
+  const a = parseFloat(document.getElementById("w_A").value) || 0;
+  const b = parseFloat(document.getElementById("w_B").value) || 0;
+  const c = parseFloat(document.getElementById("w_C").value) || 0;
+  const d = parseFloat(document.getElementById("w_D").value) || 0;
+  if(total > 0 && a === 0 && b === 0 && c === 0 && d === 0) document.getElementById("w_A").value = total;
+}
+
+function addTransaction() {
+  if (!selectedFormCat) { alert("กรุณาเลือกหมวดหมู่ก่อนครับ"); return; }
+  const amount = parseFloat(document.getElementById("amount").value);
+  if (!amount || amount <= 0) { alert("กรุณากรอกจำนวนเงินครับ"); return; }
+  
+  let totalW = parseFloat(document.getElementById("weight").value) || 0;
+  let wA = parseFloat(document.getElementById("w_A").value) || 0;
+  let wB = parseFloat(document.getElementById("w_B").value) || 0;
+  let wC = parseFloat(document.getElementById("w_C").value) || 0;
+  let wD = parseFloat(document.getElementById("w_D").value) || 0;
+  
+  if ((wA+wB+wC+wD) > 0 && (wA+wB+wC+wD) !== totalW) {
+    totalW = wA + wB + wC + wD;
+    document.getElementById("weight").value = totalW;
+  }
+
+  let debtorName = "";
+  if (selectedFormCat === 'income_debtor') {
+    debtorName = document.getElementById("debtorName").value.trim();
+    if (!debtorName) { alert("กรุณากรอกชื่อลูกหนี้ด้วยครับ"); return; }
+  }
+
+  const note = document.getElementById("note").value;
+  const date = document.getElementById("date").value;
+  if (!date) { alert("กรุณาระบุวันที่ครับ"); return; }
+
+  transactions.push({
+    type: currentFormTab,
+    category: selectedFormCat,
+    amount: amount,
+    weight: totalW,
+    sizes: { A: wA, B: wB, C: wC, D: wD },
+    debtorName: debtorName,
+    note: note,
+    date: date
+  });
+
+  saveToStorage();
+  
+  document.getElementById("amount").value = "";
+  document.getElementById("weight").value = "";
+  document.getElementById("w_A").value = "";
+  document.getElementById("w_B").value = "";
+  document.getElementById("w_C").value = "";
+  document.getElementById("w_D").value = "";
+  document.getElementById("debtorName").value = "";
+  document.getElementById("note").value = "";
+  
+  document.getElementById("sizeFormFields").style.display = 'none';
+  document.getElementById("sizeToggleBtn").textContent = '📊 ระบุน้ำหนักแยกเบอร์ (A, B, C, D) ▾';
+  isSizeFieldsVisible = false;
+
+  renderAll();
+}
+
+function setFilter(f) {
+  filterMode = f;
+  ['all','income','expense'].forEach(k => {
+    document.getElementById('f-'+k).className = 'filter-btn' + (k===f ? ' active' : '');
+  });
+  renderGeneralHistory();
+}
+
+let stockGlobalBreakdown = { A: 0, B: 0, C: 0, D: 0, total: 0 };
+
+function renderAll() {
+  renderOverviewCards();
+  renderGeneralHistory();
+}
+
+function renderOverviewCards() {
+  let todayIncome=0, todayExpense=0;
+  let sA=0, sB=0, sC=0, sD=0;
+  let debtorMap = {};
+  const today = new Date().toISOString().split("T")[0];
+
+  transactions.forEach(t => {
+    const sz = t.sizes || { A: 0, B: 0, C: 0, D: 0 };
+    const wA = sz.A || 0, wB = sz.B || 0, wC = sz.C || 0, wD = sz.D || 0;
+    const totalW = t.weight || 0;
+
+    if (t.type === 'income') {
+      if (wA || wB || wC || wD) { sA -= wA; sB -= wB; sC -= wC; sD -= wD; }
+      else { sA -= totalW; }
+    } else if (t.type === 'expense' && t.category === 'ค่ามะละกอ') {
+      if (wA || wB || wC || wD) { sA += wA; sB += wB; sC += wC; sD += wD; }
+      else { sA += totalW; }
+    }
+
+    if (t.debtorName) {
+      if (!debtorMap[t.debtorName]) debtorMap[t.debtorName] = { balance: 0 };
+      if (t.category === 'income_debtor') debtorMap[t.debtorName].balance += t.amount;
+      if (t.category === 'debt_collection') debtorMap[t.debtorName].balance -= t.amount;
+    }
+
+    if (t.date === today) {
+      if (t.type === 'income') todayIncome += t.amount;
+      if (t.type === 'expense') todayExpense += t.amount;
+    }
+  });
+
+  let sTotal = sA + sB + sC + sD;
+  stockGlobalBreakdown = { A: sA, B: sB, C: sC, D: sD, total: sTotal };
+
+  let overallDebtorAmt = 0;
+  for (let key in debtorMap) { if(debtorMap[key].balance > 0) overallDebtorAmt += debtorMap[key].balance; }
+
+  document.getElementById("stockBalance").innerHTML = sTotal.toLocaleString() + " <span>กก.</span>";
+  document.getElementById("todayIncome").textContent = todayIncome.toLocaleString();
+  document.getElementById("todayExpense").textContent = todayExpense.toLocaleString();
+  document.getElementById("todayProfit").textContent = (todayIncome - todayExpense).toLocaleString();
+  document.getElementById("totalDebtorBalance").textContent = overallDebtorAmt.toLocaleString();
+}
+
+function renderGeneralHistory() {
+  const list = document.getElementById("historyList");
+  const today = new Date().toISOString().split("T")[0];
+  const daily = transactions.map((t,i)=>({...t,_i:i})).filter(t => t.date === today);
+
+  list.innerHTML = '';
+  if (daily.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">📅</div><p>ยังไม่มีรายการบันทึกของวันนี้</p></div>';
+    return;
+  }
+
+  [...daily].reverse().filter(t => {
+    if (filterMode === 'income') return t.type === 'income';
+    if (filterMode === 'expense') return t.type === 'expense';
+    return true;
+  }).forEach(t => {
+    let label = t.category;
+    let icon = '💸';
+    if (t.category === 'income_cash') { label = 'เงินสด'; icon = '💵'; }
+    else if (t.category === 'income_transfer') { label = 'เงินโอน'; icon = '📲'; }
+    else if (t.category === 'income_debtor') { label = `ค้างจ่าย (${t.debtorName})`; icon = '📌'; }
+    else if (t.category === 'debt_collection') { label = `รับชำระหนี้ (${t.debtorName})`; icon = '💰'; }
+
+    let stockTag = '';
+    if (t.weight > 0 && (t.category === 'ค่ามะละกอ' || t.type === 'income')) {
+      let isIn = t.category === 'ค่ามะละกอ';
+      stockTag = `<span class="${isIn?'main-w-in':'main-w-out'}">${isIn?'+':'-'}${t.weight} กก.</span>`;
+    }
+
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.innerHTML = `
+      <div class="history-icon ${t.type}">${icon}</div>
+      <div class="history-info">
+        <div class="history-cat">${label}</div>
+        ${t.note ? `<div class="history-note">${t.note}</div>` : ''}
+        <div class="history-stock-tag">${stockTag}</div>
+      </div>
+      <div class="history-right">
+        <div class="history-amount ${t.type}">${t.type==='income'?'+':'-'}${t.amount.toLocaleString()}</div>
+        <div class="history-actions">
+          <button class="btn-edit" onclick="openEdit(${t._i})">แก้ไข</button>
+          <button class="btn-del" onclick="delTransaction(${t._i})">ลบ</button>
+        </div>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function renderDebtorList() {
+  const container = document.getElementById("debtorListView");
+  container.innerHTML = '';
+  let debtorMap = {};
+
+  transactions.forEach(t => {
+    if (t.debtorName) {
+      if (!debtorMap[t.debtorName]) debtorMap[t.debtorName] = { name: t.debtorName, balance: 0, last: t.date };
+      if (t.category === 'income_debtor') debtorMap[t.debtorName].balance += t.amount;
+      if (t.category === 'debt_collection') debtorMap[t.debtorName].balance -= t.amount;
+      if (t.date > debtorMap[t.debtorName].last) debtorMap[t.debtorName].last = t.date;
+    }
+  });
+
+  let list = Object.values(debtorMap).filter(d => d.balance > 0);
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">☀️</div><p>ไม่มีลูกหนี้ค้างจ่ายค้างแผงเลยครับ</p></div>';
+    return;
+  }
+
+  list.forEach(d => {
+    const div = document.createElement('div');
+    div.className = 'debtor-card';
+    div.innerHTML = `
+      <div><div class="debtor-name">👤 ${d.name}</div><div class="debtor-last-update">อัปเดต: ${d.last}</div></div>
+      <div style="text-align:right;"><div class="debtor-bal">฿${d.balance.toLocaleString()}</div><button class="btn-pay" onclick="openPayDebtModal('${d.name}', ${d.balance})">💵 รับชำระหนี้</button></div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+/* ── REVENUE PERIOD ENGINE REPORTS ── */
+function switchReportPeriod(period) {
+  currentReportPeriod = period;
+  document.getElementById('rep-week').className = 'report-btn-choice' + (period==='weekly'?' active':'');
+  document.getElementById('rep-month').className = 'report-btn-choice' + (period==='monthly'?' active':'');
+  calculateAndRenderReport();
+}
+
+function getFilteredReportData() {
+  const dayLimit = currentReportPeriod === 'weekly' ? 7 : 30;
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - dayLimit);
+  
+  return transactions.filter(t => {
+    const tDate = new Date(t.date);
+    return tDate >= cutoffDate;
+  });
+}
+
+function calculateAndRenderReport() {
+  const data = getFilteredReportData();
+  let income = 0, expense = 0, wOut = 0, debt = 0;
+  let sA = 0, sB = 0, sC = 0, sD = 0;
+
+  data.forEach(t => {
+    if (t.type === 'income') {
+      income += t.amount;
+      if (t.category !== 'debt_collection') {
+        wOut += t.weight || 0;
+        const sz = t.sizes || {};
+        sA += sz.A || 0; sB += sz.B || 0; sC += sz.C || 0; sD += sz.D || 0;
+      }
+    }
+    if (t.type === 'expense') expense += t.amount;
+    if (t.category === 'income_debtor') debt += t.amount;
+  });
+
+  document.getElementById('reportPeriodTitle').textContent = currentReportPeriod === 'weekly' ? '📊 สรุปผลประกอบการรายสัปดาห์ (7 วันล่าสุด)' : '📊 สรุปผลประกอบการรายเดือน (30 วันล่าสุด)';
+  document.getElementById('repIncome').textContent = income.toLocaleString() + " ฿";
+  document.getElementById('repExpense').textContent = expense.toLocaleString() + " ฿";
+  document.getElementById('repProfit').textContent = (income - expense).toLocaleString() + " ฿";
+  document.getElementById('repWeightOut').textContent = wOut.toLocaleString() + " กก.";
+  document.getElementById('repA_Out').textContent = sA.toLocaleString() + " กก.";
+  document.getElementById('repB_Out').textContent = sB.toLocaleString() + " กก.";
+  document.getElementById('repC_Out').textContent = sC.toLocaleString() + " กก.";
+  document.getElementById('repD_Out').textContent = sD.toLocaleString() + " กก.";
+  document.getElementById('repNewDebt').textContent = debt.toLocaleString() + " ฿";
+}
+
+/* ── EXCEL CLIENT SIDE EXPORT GENERATOR ── */
+function exportToExcel() {
+  const periodText = currentReportPeriod === 'weekly' ? 'รายสัปดาห์_7วัน' : 'รายเดือน_30วัน';
+  const data = getFilteredReportData();
+
+  if(data.length === 0) {
+    alert("ไม่มีข้อมูลบันทึกในช่วงเวลานี้สำหรับการส่งออกครับ");
+    return;
+  }
+
+  // Generate highly formatted HTML Table template that MS Excel loads beautifully with perfect styling & alignment
+  let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">`;
+  html += `<head><meta charset="utf-8"/><style>
+    body { font-family: 'Sarabun', sans-serif; }
+    table { border-collapse: collapse; width: 100%; }
+    th { background-color: #107c41; color: white; font-weight: bold; padding: 8px; border: 1px solid #ddd; }
+    td { padding: 8px; border: 1px solid #ddd; text-align: center; }
+    .income { color: #1e6b38; font-weight: bold; }
+    .expense { color: #a02828; }
+    .debt { color: #1565c0; font-weight: bold; }
+    .header-title { font-size: 18px; font-weight: bold; color: #107c41; text-align: left; padding: 10px 0; }
+  </style></head><body>`;
+  
+  html += `<div class="header-title">รายงานสรุปบัญชีแผงอานนท์กิจ (${currentReportPeriod === 'weekly' ? 'ประจำสัปดาห์' : 'ประจำเดือน'})</div>`;
+  html += `<table>`;
+  html += `<thead><tr>
+    <th>วันที่</th>
+    <th>ประเภท</th>
+    <th>หมวดหมู่/คำอธิบาย</th>
+    <th>จำนวนเงิน (บาท)</th>
+    <th>น้ำหนักรวม (กก.)</th>
+    <th>เบอร์ A (กก.)</th>
+    <th>เบอร์ B (กก.)</th>
+    <th>เบอร์ C (กก.)</th>
+    <th>เบอร์ D (กก.)</th>
+    <th>ชื่อลูกหนี้ (ถ้ามี)</th>
+    <th>หมายเหตุ</th>
+  </tr></thead><tbody>`;
+
+  data.forEach(t => {
+    let typeLabel = t.type === 'income' ? 'รายรับ' : 'รายจ่าย';
+    let catLabel = t.category;
+    if (t.category === 'income_cash') catLabel = 'เงินสด';
+    else if (t.category === 'income_transfer') catLabel = 'เงินโอน';
+    else if (t.category === 'income_debtor') catLabel = 'ค้างจ่าย (ตั้งหนี้)';
+    else if (t.category === 'debt_collection') catLabel = 'รับชำระเงินกู้';
+
+    let sz = t.sizes || {A:0,B:0,C:0,D:0};
+
+    html += `<tr>
+      <td>${t.date}</td>
+      <td class="${t.type}">${typeLabel}</td>
+      <td>${catLabel}</td>
+      <td style="mso-number-format:'\#,\#\#0'">${t.amount}</td>
+      <td style="mso-number-format:'\#,\#\#0'">${t.weight || 0}</td>
+      <td>${sz.A || 0}</td>
+      <td>${sz.B || 0}</td>
+      <td>${sz.C || 0}</td>
+      <td>${sz.D || 0}</td>
+      <td class="debt">${t.debtorName || '-'}</td>
+      <td>${t.note || '-'}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></body></html>`;
+
+  // Wrap inside Blob object using application/vnd.ms-excel standard scheme header
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `รายงานแผงอานนท์กิจ_${periodText}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// MODALS CONTROL
+function openStockDetailsModal() {
+  document.getElementById("st_A").textContent = stockGlobalBreakdown.A.toLocaleString() + " กก.";
+  document.getElementById("st_B").textContent = stockGlobalBreakdown.B.toLocaleString() + " กก.";
+  document.getElementById("st_C").textContent = stockGlobalBreakdown.C.toLocaleString() + " กก.";
+  document.getElementById("st_D").textContent = stockGlobalBreakdown.D.toLocaleString() + " กก.";
+  document.getElementById("stockDetailsModal").classList.add("open");
+}
+function closeStockDetailsModal() { document.getElementById("stockDetailsModal").classList.remove("open"); }
+
+function openPayDebtModal(name, bal) {
+  document.getElementById("pDebtName").value = name;
+  document.getElementById("pDebtCurrentBal").value = bal.toLocaleString();
+  document.getElementById("pDebtAmountPay").value = bal;
+  document.getElementById("payDebtModal").classList.add("open");
+}
+function closePayDebtModal() { document.getElementById("payDebtModal").classList.remove("open"); }
+
+function processPayDebt() {
+  const name = document.getElementById("pDebtName").value;
+  const payAmt = parseFloat(document.getElementById("pDebtAmountPay").value);
+  const channel = document.getElementById("pDebtChannel").value;
+  if (!payAmt || payAmt <= 0) { alert("กรุณาใส่จำนวนเงินครับ"); return; }
+
+  transactions.push({
+    type: 'income', category: 'debt_collection', amount: payAmt, weight: 0,
+    sizes: { A:0, B:0, C:0, D:0 }, debtorName: name,
+    note: `รับชำระหนี้ผ่านช่องทาง: ${channel==='income_cash'?'เงินสด':'เงินโอน'}`,
+    date: new Date().toISOString().split("T")[0]
+  });
+
+  saveToStorage(); closePayDebtModal(); renderAll(); renderDebtorList();
+}
+
+function openEdit(i) {
+  editIndex = i; const t = transactions[i]; editTab = t.type;
+  document.getElementById('editAmount').value = t.amount;
+  document.getElementById('editWeight').value = t.weight || 0;
+  let sz = t.sizes || {A:0,B:0,C:0,D:0};
+  document.getElementById('ed_w_A').value = sz.A || 0;
+  document.getElementById('ed_w_B').value = sz.B || 0;
+  document.getElementById('ed_w_C').value = sz.C || 0;
+  document.getElementById('ed_w_D').value = sz.D || 0;
+  document.getElementById('editNote').value = t.note || '';
+  document.getElementById('editDate').value = t.date;
+
+  switchEditTab(t.type);
+  document.getElementById('editModal').classList.add('open');
+}
+function closeModal() { document.getElementById('editModal').classList.remove('open'); }
+
+function switchEditTab(tab) {
+  editTab = tab;
+  document.getElementById('edit-tab-income').className = 'type-tab' + (tab==='income'?' active-income':'');
+  document.getElementById('edit-tab-expense').className = 'type-tab' + (tab==='expense'?' active-expense':'');
+  document.getElementById('edit-income-cats').style.display = tab==='income'?'block':'none';
+  document.getElementById('edit-expense-cats').style.display = tab==='expense'?'block':'none';
+}
+
+function selectEditCat(btn, side) { editSelectedCat = btn.dataset.cat; }
+
+function saveEdit() {
+  const amt = parseFloat(document.getElementById('editAmount').value);
+  let totalW = parseFloat(document.getElementById('editWeight').value) || 0;
+  transactions[editIndex].amount = amt;
+  transactions[editIndex].weight = totalW;
+  transactions[editIndex].note = document.getElementById('editNote').value;
+  transactions[editIndex].date = document.getElementById('editDate').value;
+  saveToStorage(); closeModal(); renderAll();
+}
+
+function delTransaction(i) {
+  if (!confirm("ลบรายการนี้ใช่ไหมครับ?")) return;
+  transactions.splice(i, 1); saveToStorage(); renderAll();
+}
+function saveToStorage() { localStorage.setItem("papayaData", JSON.stringify(transactions)); }
+
+renderAll();
+</script>
+</body>
+</html>
